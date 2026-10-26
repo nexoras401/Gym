@@ -1,0 +1,6 @@
+import http from 'node:http';
+import {readFile} from 'node:fs/promises';
+import path from 'node:path';
+import {handler} from './lib/api.mjs';
+const types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon'};
+http.createServer(async(req,res)=>{if(req.url.startsWith('/api/'))return handler(req,res);let p;try{p=decodeURIComponent(new URL(req.url,'http://local').pathname);}catch{res.writeHead(400).end();return;}const file=path.resolve('public','.'+(p==='/'?'/index.html':p));if(!file.startsWith(path.resolve('public')+path.sep)){res.writeHead(403).end();return;}try{const data=await readFile(file);res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' https: data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");res.end(data);}catch{res.writeHead(404).end('Página não encontrada.');}}).listen(process.env.PORT||4173,'0.0.0.0',()=>console.log('GYM STORE http://localhost:'+(process.env.PORT||4173)));

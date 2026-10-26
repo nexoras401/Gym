@@ -1,0 +1,3 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+let html=readFileSync('PREVIA-GYM-STORE.html','utf8').replaceAll('@media(max-width:640px)','@media(min-width:0px)');
+html=html.replace('</head>',`<style>html{background:#ececec}body{width:100%;max-width:430px;margin:0 auto;min-height:100dvh;box-shadow:0 0 25px #0001}header{width:100%}.mobile-nav{width:min(430px,100%);left:50%;right:auto;transform:translateX(-50%)}dialog,dialog.product-modal{width:min(430px,100vw)!important;max-width:min(430px,100vw)!important;margin:auto!important}#toast{max-width:min(90vw,390px)}@media(max-width:430px){html{background:#fff}body{box-shadow:none}}</style></head>`);writeFileSync('PREVIA-CELULAR.html',html);console.log('Prévia de celular direta criada, sem iframe.');

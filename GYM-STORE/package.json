@@ -1,0 +1,20 @@
+{
+  "name": "gym-store",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.16"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env server.mjs",
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/check.mjs",
+    "admin": "node --env-file-if-exists=.env scripts/setup-admin.mjs",
+    "preview:files": "node scripts/make-preview.mjs && node scripts/make-admin-preview.mjs && node scripts/make-mobile-preview.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

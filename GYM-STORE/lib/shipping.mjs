@@ -1,0 +1,8 @@
+// Adapter preparado; só faz chamadas após ativação explícita pelo responsável.
+export async function shippingQuote({cep,items,products},env=process.env,fetcher=fetch){
+ if(env.SHIPPING_ENABLED!=='true'||!env.MELHOR_ENVIO_TOKEN||!env.ORIGIN_CEP)throw Object.assign(Error('Cálculo de frete indisponível: configure e autorize o serviço de frete. Nenhum valor foi estimado.'),{status:503});
+ const base=env.MELHOR_ENVIO_SANDBOX==='false'?'https://melhorenvio.com.br':'https://sandbox.melhorenvio.com.br';
+ const payload={from:{postal_code:env.ORIGIN_CEP},to:{postal_code:cep.replace(/\D/g,'')},products:items.map(i=>{const p=products.find(p=>p.id===i.productId);if(!p?.package)throw Object.assign(Error('Configure peso e dimensões reais de todos os produtos antes de cotar.'),{status:400});return {id:p.id,width:p.package.width,height:p.package.height,length:p.package.length,weight:p.package.weight,insurance_value:p.price/100,quantity:i.quantity};}),options:{receipt:false,own_hand:false}};
+ const r=await fetcher(base+'/api/v2/me/shipment/calculate',{method:'POST',headers:{Authorization:'Bearer '+env.MELHOR_ENVIO_TOKEN,'Content-Type':'application/json',Accept:'application/json','User-Agent':'GYM STORE shipping'},body:JSON.stringify(payload),signal:AbortSignal.timeout(10000)});
+ if(!r.ok)throw Object.assign(Error('Serviço de frete temporariamente indisponível.'),{status:503});const rates=(await r.json()).filter(x=>!x.error&&Number.isFinite(Number(x.price))).map(x=>({id:String(x.id),name:x.company.name+' — '+x.name,price:Math.round(Number(x.price)*100),days:x.delivery_time}));return {rates};
+}

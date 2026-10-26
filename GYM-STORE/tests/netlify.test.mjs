@@ -1,0 +1,22 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+process.env.SQLITE_PATH=path.join(mkdtempSync(path.join(tmpdir(),'gym-netlify-')),'test.sqlite');
+delete process.env.DATABASE_URL;
+delete process.env.NETLIFY;
+const {default:store,config}=await import('../netlify/functions/store.mjs');
+const call=(route,method='GET',body,cookie='',origin='https://gym.example.test')=>store(new Request('https://gym.example.test/api'+route,{method,headers:{...(body?{'content-type':'application/json'}:{}),cookie,origin},...(body?{body:JSON.stringify(body)}:{})}),{ip:'192.0.2.40'});
+test('Netlify: catálogo, bloqueio, cadastro, cookie seguro, sessão e logout',async()=>{
+ assert.equal(config.path,'/api/*');
+ let r=await call('/store');assert.equal(r.status,200);assert.equal((await r.json()).products.length,6);
+ assert.equal((await call('/admin')).status,401);
+ r=await call('/auth/register','POST',{name:'Cliente Netlify',email:'netlify@example.test',password:'Netlify-Teste-123'});assert.equal(r.status,200);
+ const cookie=r.headers.get('set-cookie');assert.match(cookie,/HttpOnly/);assert.match(cookie,/Secure/);assert.match(cookie,/SameSite=Lax/);
+ r=await call('/me','GET',undefined,cookie.split(';')[0]);assert.equal((await r.json()).user.name,'Cliente Netlify');
+ assert.equal((await call('/admin','GET',undefined,cookie.split(';')[0])).status,403);
+ assert.equal((await call('/auth/login','POST',{email:'netlify@example.test',password:'Netlify-Teste-123'},'','https://evil.example')).status,403);
+ assert.equal((await call('/auth/logout','POST',{},cookie.split(';')[0])).status,200);
+ assert.equal((await (await call('/me','GET',undefined,cookie.split(';')[0])).json()).user,null);
+});

@@ -1,0 +1,11 @@
+import {readFileSync,writeFileSync} from 'node:fs';import {seed} from '../lib/seed.mjs';
+let html=readFileSync('public/index.html','utf8'),css=readFileSync('public/style.css','utf8'),js=readFileSync('public/app.js','utf8');const s=seed();
+let previewStore={products:s.products,categories:s.categories,banners:s.banners,demo:true,whatsappNumber:process.env.WHATSAPP_NUMBER||''};
+js=js.replace("import {buildWhatsAppMessage,whatsappURL} from './whatsapp.js';\n",'');
+const whatsapp=readFileSync('public/whatsapp.js','utf8').replaceAll('export ','');
+const adapter=`async function api(path,method='GET',body){if(path==='/store')return PREVIEW_STORE;if(path==='/me')return {user:null};if(path==='/quote'){let subtotal=0;const items=body.items.map(i=>{const p=PREVIEW_STORE.products.find(x=>x.id===i.productId);if(!p||!p.sizes[i.size]||p.sizes[i.size]<i.quantity)throw Error('Estoque insuficiente.');subtotal+=p.price*i.quantity;return {...i,price:p.price,name:p.name,color:p.color,image:p.images[0]};});const c=String(body.coupon||'').toUpperCase();if(c&&c!=='GYM10')throw Error('Cupom de exemplo inválido.');const discount=c?Math.floor(subtotal*.1):0;return {items,subtotal,discount,total:subtotal-discount,coupon:c};}throw Error('Prévia visual: esta função exige o servidor do projeto completo. Consulte o README do ZIP.');}\n`;
+js=js.slice(0,js.indexOf('async function api('))+adapter+js.slice(js.indexOf('function toast('));
+html=html.replace('<link rel="stylesheet" href="/style.css">','<style>'+css+'</style>').replace('<script type="module" src="/app.js"></script>','').replace('<div class="announcement">','<div class="notice" style="margin:0;text-align:center">PRÉVIA LOCAL • Catálogo e sacola navegáveis. Pedidos preparados para WhatsApp. Contas e painel exigem o servidor do ZIP.</div><div class="announcement">');
+html=html.replace('</body>',`<script>const PREVIEW_STORE=${JSON.stringify(previewStore)};${whatsapp}\n${js}</script></body>`);
+for(const f of ['logo.webp','red.webp','white.webp','tan.webp','marble-background.webp','adidas.webp'])html=html.split('/assets/'+f).join('data:image/webp;base64,'+readFileSync('public/assets/'+f).toString('base64'));
+writeFileSync('PREVIA-GYM-STORE.html',html);console.log('Prévia autônoma criada.');

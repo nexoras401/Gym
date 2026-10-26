@@ -1,0 +1,13 @@
+[
+  {
+    "id": "9bf85591b9632a67c9ac7c9f",
+    "name": "Administrador GYM STORE",
+    "username": "dono.gym",
+    "email": "",
+    "password": "v2:9d8e70cee3f90e4fa4cb9fc0c3ef470d:9d5083ad58b1a6c76537e332e05811f46d98863c7a032b6bfdc23d11cb37eb29487f56fdcad41791db3f11c3d0a6c243687fcbbcb624fd6d3b34829763b396d5",
+    "role": "owner",
+    "active": true,
+    "mustChangePassword": true,
+    "createdAt": "2026-10-23T04:26:43.251Z"
+  }
+]

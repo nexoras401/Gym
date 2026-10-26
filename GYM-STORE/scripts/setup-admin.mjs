@@ -1,0 +1,9 @@
+import readline from 'node:readline/promises';
+import {Writable} from 'node:stream';
+import {transaction} from '../lib/database.mjs';
+import {passwordHash,token} from '../lib/security.mjs';
+if(!process.stdin.isTTY){console.error('Execute este comando em um terminal interativo.');process.exit(1);}
+let muted=false;const output=new Writable({write(chunk,encoding,callback){if(!muted)process.stdout.write(chunk,encoding);callback();}});
+const rl=readline.createInterface({input:process.stdin,output,terminal:true});
+async function secret(prompt){const pending=rl.question(prompt);muted=true;try{return await pending;}finally{muted=false;process.stdout.write('\n');}}
+try{console.log('\nGYM STORE — criar administrador\n');const name=(await rl.question('Seu nome: ')).trim();const email=(await rl.question('Seu e-mail: ')).trim().toLowerCase();const password=await secret('Senha exclusiva (mínimo 12 caracteres, entrada oculta): ');const confirm=await secret('Confirme a senha: ');if(!name||name.length>100||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>200)throw Error('Nome ou e-mail inválido.');if(password!==confirm||password.length<12||password.length>128)throw Error('As senhas devem coincidir e ter de 12 a 128 caracteres.');await transaction(s=>{if(s.users.some(u=>['owner','manager','admin'].includes(u.role)))throw Error('A loja já possui seu único administrador. Use o login existente.');if(s.users.some(u=>u.email===email))throw Error('Este e-mail já está cadastrado. Nenhuma conta foi alterada.');s.users.push({id:token().slice(0,16),name,email,password:passwordHash(password),role:'owner',addresses:[],createdAt:new Date().toISOString()});});console.log('\nAdministrador criado. Entre em Minha conta e abra Administração no rodapé.\n');}catch(e){console.error('\n'+e.message);process.exitCode=1;}finally{rl.close();process.exit(process.exitCode||0);}
